@@ -13,5 +13,5 @@ sudo su
 ```
 3)
 ```bash
-git clone https://github.com/linuxshef/manjaroinstall.git ; cd manjaroinstall ; ./manjaroinstall
+git clone https://github.com/pdasilem/manjaroinstall.git ; cd manjaroinstall ; ./manjaroinstall
 ```
