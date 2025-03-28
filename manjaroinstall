@@ -628,6 +628,63 @@ clear
 source config/logo/logo28
 sleep 5
 arch-chroot /mnt /bin/bash -c "exit"
+# -------------------------------
+# Опциональная установка драйвера Goodix GT7868Q
+# -------------------------------
+read -p "Установить драйвер Goodix GT7868Q для тачпада? (y/n): " install_goodix
+if [[ "$install_goodix" == "y" || "$install_goodix" == "Y" ]]; then
+    echo "Клонирование репозитория драйвера..."
+    git clone https://github.com/ty2/goodix-gt7868q-linux-driver.git /tmp/goodix_driver
+    if [ $? -ne 0 ]; then
+        echo "Ошибка при клонировании репозитория драйвера."
+        exit 1
+    fi
+
+    cd /tmp/goodix_driver || exit 1
+
+    echo "Компиляция драйвера..."
+    make
+    if [ $? -ne 0 ]; then
+        echo "Ошибка при компиляции драйвера."
+        exit 1
+    fi
+
+    echo "Загрузка модуля в ядро..."
+    sudo modprobe ./goodix-gt7868q.ko
+    if [ $? -ne 0 ]; then
+        echo "Ошибка при загрузке модуля."
+        exit 1
+    fi
+
+    echo "Установка драйвера через DKMS..."
+    sudo make install-dkms
+
+    echo "Установка libinput quirks..."
+    sudo make install-quirks
+
+    QUIRKS_FILE="/usr/share/libinput/60-custom-thinkbookg6p2024imh.quirks"
+    if [ -f "$QUIRKS_FILE" ]; then
+        echo "Обновление quirks-файла для ThinkBook G7+ ASP..."
+        sudo sed -i 's/\[Lenovo Thinkbook G6+ IMH - Goodix GT7868Q\]/[Lenovo Thinkbook G7+ ASP - Goodix GT7868Q]/' "$QUIRKS_FILE"
+        sudo sed -i 's/dmi:bvnLENOVO:\*:pvrThinkBook\*G6+IMH\*:*/dmi:bvnLENOVO:*:pvrThinkBook*G7+ASP*:*/' "$QUIRKS_FILE"
+    fi
+
+    echo "Перезапись файла конфигурации для тачпада..."
+    sudo tee /mnt/etc/X11/xorg.conf.d/30-touchpad.conf > /dev/null << 'EOF'
+Section "InputClass"
+    Identifier "touchpad"
+    Driver "libinput"
+    MatchIsTouchpad "on"
+    Option "Tapping" "on"
+    Option "TappingButtonMap" "lrm"
+    # Option "NaturalScrolling" "true"
+EndSection
+EOF
+
+    echo "Драйвер Goodix GT7868Q успешно установлен и настроен!"
+fi
+
+echo "Установка завершена. Система будет перезагружена."
 umount -R /mnt
 clear
 reboot
