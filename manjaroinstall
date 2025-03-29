@@ -568,6 +568,7 @@ sleep 4
 pacman-mirrors --fasttrack
 pacman -Syy
 pacman -Sy arch-install-scripts --noconfirm
+pacman -S --noconfirm base-devel
 source config/base ; $base
 #----------------------------------------------------------------------------------
 fstabgen -U /mnt >> /mnt/etc/fstab
